@@ -8,13 +8,13 @@
     <!-- ============================================== -->
     <!-- SCHOOL SPORTS TOURNAMENT SYSTEM - UPDATED -->
     <!-- Author: school-sports | Date: 2025-05-23 -->
-    <!-- Tổng cộng: 7 bảng chính - Tất cả ID đã thống nhất thành INT -->
+    <!-- Tổng cộng: 7 bảng chính - Tất cả ID đã thống nhất thành BIGINT -->
     <!-- ============================================== -->
 
     <!-- 1. Table: users - Đơn giản hóa -->
     <changeSet id="20250523-0001" author="school-sports">
         <createTable tableName="users">
-            <column name="id" type="int" autoIncrement="true">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
@@ -34,7 +34,7 @@
     <!-- 2. Table: role - Đơn giản hóa -->
     <changeSet id="20250523-0002" author="school-sports">
         <createTable tableName="role">
-            <column name="id" type="int" autoIncrement="true">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="name" type="varchar(50)">
@@ -46,10 +46,10 @@
     <!-- 3. Table: user_roles - Cập nhật kiểu dữ liệu -->
     <changeSet id="20250523-0003" author="school-sports">
         <createTable tableName="user_roles">
-            <column name="user_id" type="int">
+            <column name="user_id" type="bigint">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="role_id" type="int">
+            <column name="role_id" type="bigint">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
         </createTable>
@@ -67,10 +67,10 @@
                 referencedColumnNames="id"/>
     </changeSet>
 
-    <!-- 4. Table: tournaments - Thống nhất ID thành INT -->
+    <!-- 4. Table: tournaments - Thống nhất ID thành BIGINT -->
     <changeSet id="20250523-0004" author="school-sports">
         <createTable tableName="tournaments">
-            <column name="id" type="int" autoIncrement="true">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="name" type="varchar(255)">
@@ -93,19 +93,19 @@
             </column>
             <column name="registration_deadline" type="datetime"/>
             <column name="status" type="ENUM('REGISTRATION', 'ONGOING', 'COMPLETED', 'CANCELLED')" defaultValue="REGISTRATION"/>
-            <column name="winner_team_id" type="int"/>
-            <column name="runner_up_team_id" type="int"/>
+            <column name="winner_team_id" type="bigint"/>
+            <column name="runner_up_team_id" type="bigint"/>
             <column name="rules" type="text"/>
             <column name="prize_info" type="text"/>
             <column name="contact_info" type="text"/>
             <column name="created_at" type="bigint">
                 <constraints nullable="false"/>
             </column>
-            <column name="created_by" type="int">
+            <column name="created_by" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="last_updated_at" type="bigint"/>
-            <column name="last_updated_by" type="int"/>
+            <column name="last_updated_by" type="bigint"/>
         </createTable>
         <addForeignKeyConstraint
                 baseTableName="tournaments"
@@ -115,13 +115,13 @@
                 referencedColumnNames="id"/>
     </changeSet>
 
-    <!-- 5. Table: teams - Thống nhất ID thành INT -->
+    <!-- 5. Table: teams - Thống nhất ID thành BIGINT -->
     <changeSet id="20250523-0005" author="school-sports">
         <createTable tableName="teams">
-            <column name="id" type="int" autoIncrement="true">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="tournament_id" type="int">
+            <column name="tournament_id" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="name" type="varchar(255)">
@@ -129,7 +129,7 @@
             </column>
             <column name="team_color" type="varchar(20)"/>
             <column name="member_count" type="int" defaultValueNumeric="0"/>
-            <column name="captain_user_id" type="int">
+            <column name="captain_user_id" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="contact_info" type="text"/>
@@ -138,11 +138,11 @@
             <column name="created_at" type="bigint">
                 <constraints nullable="false"/>
             </column>
-            <column name="created_by" type="int">
+            <column name="created_by" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="last_updated_at" type="bigint"/>
-            <column name="last_updated_by" type="int"/>
+            <column name="last_updated_by" type="bigint"/>
         </createTable>
         <addUniqueConstraint
                 tableName="teams"
@@ -168,23 +168,23 @@
                 referencedColumnNames="id"/>
     </changeSet>
 
-    <!-- 6. Table: matches - Thống nhất ID thành INT -->
+    <!-- 6. Table: matches - Thống nhất ID thành BIGINT -->
     <changeSet id="20250523-0006" author="school-sports">
         <createTable tableName="matches">
-            <column name="id" type="int" autoIncrement="true">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="tournament_id" type="int">
+            <column name="tournament_id" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="round_number" type="int">
                 <constraints nullable="false"/>
             </column>
             <column name="round_name" type="varchar(100)"/>
-            <column name="team1_id" type="int">
+            <column name="team1_id" type="bigint">
                 <constraints nullable="false"/>
             </column>
-            <column name="team2_id" type="int">
+            <column name="team2_id" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="match_date" type="datetime">
@@ -194,18 +194,18 @@
             <column name="status" type="ENUM('SCHEDULED', 'LIVE', 'COMPLETED', 'CANCELLED')" defaultValue="SCHEDULED"/>
             <column name="team1_score" type="int" defaultValueNumeric="0"/>
             <column name="team2_score" type="int" defaultValueNumeric="0"/>
-            <column name="winner_team_id" type="int"/>
+            <column name="winner_team_id" type="bigint"/>
             <column name="match_number" type="int"/>
             <column name="referee" type="varchar(255)"/>
             <column name="notes" type="text"/>
             <column name="created_at" type="bigint">
                 <constraints nullable="false"/>
             </column>
-            <column name="created_by" type="int">
+            <column name="created_by" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="last_updated_at" type="bigint"/>
-            <column name="last_updated_by" type="int"/>
+            <column name="last_updated_by" type="bigint"/>
         </createTable>
         <addForeignKeyConstraint
                 baseTableName="matches"
@@ -239,16 +239,16 @@
                 referencedColumnNames="id"/>
     </changeSet>
 
-    <!-- 7. Table: tournament_registrations - Thống nhất ID thành INT -->
+    <!-- 7. Table: tournament_registrations - Thống nhất ID thành BIGINT -->
     <changeSet id="20250523-0007" author="school-sports">
         <createTable tableName="tournament_registrations">
-            <column name="id" type="int" autoIncrement="true">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
-            <column name="tournament_id" type="int">
+            <column name="tournament_id" type="bigint">
                 <constraints nullable="false"/>
             </column>
-            <column name="user_id" type="int">
+            <column name="user_id" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="status" type="ENUM('PENDING', 'APPROVED', 'REJECTED')" defaultValue="PENDING"/>
@@ -257,11 +257,11 @@
             <column name="created_at" type="bigint">
                 <constraints nullable="false"/>
             </column>
-            <column name="created_by" type="int">
+            <column name="created_by" type="bigint">
                 <constraints nullable="false"/>
             </column>
             <column name="last_updated_at" type="bigint"/>
-            <column name="last_updated_by" type="int"/>
+            <column name="last_updated_by" type="bigint"/>
         </createTable>
         <addUniqueConstraint
                 tableName="tournament_registrations"
@@ -290,7 +290,7 @@
     <!-- 8. Table: news - Giữ nguyên -->
     <changeSet id="20250523-0008" author="school-sports">
         <createTable tableName="news">
-            <column name="id" type="int" autoIncrement="true">
+            <column name="id" type="bigint" autoIncrement="true">
                 <constraints primaryKey="true" nullable="false"/>
             </column>
             <column name="url" type="text">
@@ -387,7 +387,7 @@
             <column name="role_id" valueNumeric="1"/>
         </insert>
 
-        <!-- Sample tournaments với INT IDs -->
+        <!-- Sample tournaments với BIGINT IDs -->
         <insert tableName="tournaments">
             <column name="name" value="Giải Cầu lông Sinh viên 2025"/>
             <column name="sport_type" value="Cầu lông"/>

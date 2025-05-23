@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AttachmentRepository extends JpaRepository<Attachment, Long> {
-    int countByReportId(Long reportId);
+    int countByNewsId(Long reportId);
 }

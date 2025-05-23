@@ -1,5 +1,6 @@
 package com.example.checkscam.entity;
 
+import com.example.checkscam.constant.TournamentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -79,7 +80,5 @@ public class Tournament {
     @JoinColumn(name = "last_updated_by")
     private User lastUpdatedBy;
 
-    public enum TournamentStatus {
-        REGISTRATION, ONGOING, COMPLETED, CANCELLED
-    }
+
 }
