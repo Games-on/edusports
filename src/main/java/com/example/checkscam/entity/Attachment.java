@@ -5,8 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "attachments",
-        indexes = @Index(name = "report_id", columnList = "report_id"))
+@Table(name = "attachments")
 @Getter
 @Setter
 @NoArgsConstructor

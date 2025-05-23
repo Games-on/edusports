@@ -9,6 +9,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -22,6 +23,7 @@ public class DataInitializer {
     private final RoleRepository roleRepository;
 
     @PostConstruct
+    @Transactional  // 👈 Thêm annotation này để đảm bảo transaction được commit
     public void init() {
 
         // Tạo các role nếu chưa tồn tại
@@ -30,7 +32,7 @@ public class DataInitializer {
             Role collabRole = Role.builder().name(RoleName.COLLAB).build();
             roleRepository.save(adminRole);
             roleRepository.save(collabRole);
-            System.out.println("Đã tạo các role ADMIN và COLLAB.");
+            System.out.println("✅ Đã tạo các role ADMIN và COLLAB.");
         }
 
         // Tạo user admin và collab mặc định nếu chưa tồn tại
@@ -46,7 +48,7 @@ public class DataInitializer {
             adminUser.setPassword(passwordEncoder.encode("123456")); // Thay đổi password mặc định
             adminUser.setRoles(adminRoles);
             userRepository.save(adminUser);
-            System.out.println("Đã tạo tài khoản ADMIN mặc định.");
+            System.out.println("✅ Đã tạo tài khoản ADMIN mặc định.");
 
             // Tạo user collab
             Role collabRole = roleRepository.findByName(RoleName.COLLAB);
@@ -59,7 +61,7 @@ public class DataInitializer {
             collabUser.setPassword(passwordEncoder.encode("123456")); // Thay đổi password mặc định
             collabUser.setRoles(collabRoles);
             userRepository.save(collabUser);
-            System.out.println("Đã tạo tài khoản COLLAB mặc định.");
+            System.out.println("✅ Đã tạo tài khoản COLLAB mặc định.");
         }
     }
 }

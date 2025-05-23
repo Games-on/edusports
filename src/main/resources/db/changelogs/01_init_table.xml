@@ -28,6 +28,7 @@
                 <constraints nullable="false"/>
             </column>
             <column name="is_active" type="boolean" defaultValueBoolean="true"/>
+            <column name="refresh_token" type="MEDIUMTEXT"/>
         </createTable>
     </changeSet>
 
@@ -42,6 +43,8 @@
             </column>
         </createTable>
     </changeSet>
+
+
 
     <!-- 3. Table: user_roles - Cập nhật kiểu dữ liệu -->
     <changeSet id="20250523-0003" author="school-sports">
@@ -314,6 +317,19 @@
                 constraintName="fk_tournaments_runner_up_team_id"
                 referencedTableName="teams"
                 referencedColumnNames="id"/>
+    </changeSet>
+    <changeSet id="create-attachments-table" author="school-sports">
+        <createTable tableName="attachments">
+            <column name="id" type="bigint" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="url" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="news_id" type="bigint">
+                <constraints nullable="true" foreignKeyName="fk_attachments_news" references="news(id)"/>
+            </column>
+        </createTable>
     </changeSet>
 
     <!-- Create indexes for performance -->
