@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class TournamentResponseDTO {
@@ -38,12 +39,21 @@ public class TournamentResponseDTO {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
     private LocalDateTime createdAt;
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
+    private LocalDateTime lastUpdatedAt;
+
     private UserDTO createdBy;
+    
+    private List<TeamDTO> teams;
 
     @Data
     public static class TeamDTO {
         private Long id;
         private String name;
+        private String teamColor;
+        private int memberCount;
+        private String status;
+        private UserDTO captain;
     }
 
     @Data

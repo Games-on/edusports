@@ -2,6 +2,7 @@ package com.example.checkscam.constant;
 
 public enum TournamentStatus {
     REGISTRATION("REGISTRATION"),
+    READY_TO_START("READY_TO_START"),
     ONGOING("ONGOING"), 
     COMPLETED("COMPLETED"),
     CANCELLED("CANCELLED");

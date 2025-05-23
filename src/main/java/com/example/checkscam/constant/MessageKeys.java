@@ -10,4 +10,10 @@ public class MessageKeys {
     public static final String UPLOAD_ATTACHMENTS_FILE_STORAGE_ERROR = "report.upload_attachments.error.storage_error";
     public static final String UPLOAD_ATTACHMENTS_NO_VALID_FILES = "report.upload_attachments.error.no_valid_files";
     public static final String ERROR_OCCURRED_DEFAULT = "error.occurred.default";
+    
+    // News related messages
+    public static final String NEWS_NOT_FOUND = "news.error.not_found";
+    public static final String NEWS_CREATED_SUCCESSFULLY = "news.created.successfully";
+    public static final String NEWS_UPDATED_SUCCESSFULLY = "news.updated.successfully";
+    public static final String NEWS_DELETED_SUCCESSFULLY = "news.deleted.successfully";
 }

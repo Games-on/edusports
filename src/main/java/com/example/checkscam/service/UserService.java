@@ -3,6 +3,7 @@ package com.example.checkscam.service;
 import com.example.checkscam.constant.RoleName;
 import com.example.checkscam.dto.ResCreateUserDTO;
 import com.example.checkscam.dto.request.UpdateUserRequest;
+import com.example.checkscam.dto.request.UserRegistrationDTO;
 import com.example.checkscam.entity.Role;
 import com.example.checkscam.entity.User;
 import com.example.checkscam.repository.RoleRepository;
@@ -10,6 +11,7 @@ import com.example.checkscam.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -30,9 +32,9 @@ public class UserService {
     public ResCreateUserDTO handleCreateUser(User user) {
         ResCreateUserDTO resCreateUserDTO = new ResCreateUserDTO();
         // Lấy role COLLAB
-        Role collabRole = roleRepository.findByName(RoleName.COLLAB);
+     //   Role collabRole = roleRepository.findByName(RoleName.COLLAB);
         Set<Role> roles = new HashSet<>();
-        roles.add(collabRole);
+      //  roles.add(collabRole);
         user.setRoles(roles); // Gán role COLLAB cho user
 
         user = userRepository.save(user);
@@ -73,7 +75,8 @@ public class UserService {
     }
 
     public User handleGetUserByUsername(String username) {
-        return this.userRepository.findByEmail(username);
+        Optional<User> userOptional = this.userRepository.findByEmail(username);
+        return userOptional.orElse(null);
     }
 
     public void updateUserToken(String token, String email) {
@@ -82,6 +85,38 @@ public class UserService {
             currentUser.setRefreshToken(token);
             this.userRepository.save(currentUser);
         }
+    }
+
+    public ResCreateUserDTO registerUser(UserRegistrationDTO registrationDTO) {
+        // Check if user already exists
+        Optional<User> existingUser = userRepository.findByEmail(registrationDTO.getEmail());
+        if (existingUser.isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        User user = new User();
+        user.setName(registrationDTO.getName());
+        user.setEmail(registrationDTO.getEmail());
+        user.setPassword(passwordEncoder.encode(registrationDTO.getPassword()));
+        user.setCreatedAt(Instant.now());
+        user.setActive(true);
+
+        // Assign default STUDENT role
+        Set<Role> roles = new HashSet<>();
+        Role studentRole = roleRepository.findByName(RoleName.STUDENT);
+        if (studentRole != null) {
+            roles.add(studentRole);
+        }
+        user.setRoles(roles);
+
+        User savedUser = userRepository.save(user);
+        
+        ResCreateUserDTO resCreateUserDTO = new ResCreateUserDTO();
+        resCreateUserDTO.setId(savedUser.getId());
+        resCreateUserDTO.setEmail(savedUser.getEmail());
+        resCreateUserDTO.setName(savedUser.getName());
+        
+        return resCreateUserDTO;
     }
 
 }
