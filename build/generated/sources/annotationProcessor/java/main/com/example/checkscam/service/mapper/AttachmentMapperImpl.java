@@ -1,0 +1,87 @@
+package com.example.checkscam.service.mapper;
+
+import com.example.checkscam.dto.AttachmentDto;
+import com.example.checkscam.dto.NewsDto;
+import com.example.checkscam.dto.ReportDto;
+import com.example.checkscam.entity.Attachment;
+import com.example.checkscam.entity.News;
+import com.example.checkscam.entity.Report;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.processing.Generated;
+import org.springframework.stereotype.Component;
+
+@Generated(
+    value = "org.mapstruct.ap.MappingProcessor",
+    date = "2025-05-15T11:13:48+0700",
+    comments = "version: 1.5.5.Final, compiler: IncrementalProcessingEnvironment from gradle-language-java-8.13.jar, environment: Java 22.0.1 (Oracle Corporation)"
+)
+@Component
+public class AttachmentMapperImpl implements AttachmentMapper {
+
+    @Override
+    public AttachmentDto entityToDto(Attachment attachment) {
+        if ( attachment == null ) {
+            return null;
+        }
+
+        AttachmentDto.AttachmentDtoBuilder attachmentDto = AttachmentDto.builder();
+
+        attachmentDto.id( attachment.getId() );
+        attachmentDto.url( attachment.getUrl() );
+        attachmentDto.report( reportToReportDto( attachment.getReport() ) );
+        attachmentDto.news( newsToNewsDto( attachment.getNews() ) );
+
+        return attachmentDto.build();
+    }
+
+    protected ReportDto reportToReportDto(Report report) {
+        if ( report == null ) {
+            return null;
+        }
+
+        ReportDto reportDto = new ReportDto();
+
+        reportDto.setId( report.getId() );
+        reportDto.setInfo( report.getInfo() );
+        reportDto.setDescription( report.getDescription() );
+        reportDto.setStatus( report.getStatus() );
+        reportDto.setType( report.getType() );
+        reportDto.setIdScamTypeAfterHandle( report.getIdScamTypeAfterHandle() );
+        reportDto.setEmailAuthorReport( report.getEmailAuthorReport() );
+        reportDto.setReason( report.getReason() );
+        reportDto.setInfoDescription( report.getInfoDescription() );
+        reportDto.setDateReport( report.getDateReport() );
+
+        return reportDto;
+    }
+
+    protected List<AttachmentDto> attachmentListToAttachmentDtoList(List<Attachment> list) {
+        if ( list == null ) {
+            return null;
+        }
+
+        List<AttachmentDto> list1 = new ArrayList<AttachmentDto>( list.size() );
+        for ( Attachment attachment : list ) {
+            list1.add( entityToDto( attachment ) );
+        }
+
+        return list1;
+    }
+
+    protected NewsDto newsToNewsDto(News news) {
+        if ( news == null ) {
+            return null;
+        }
+
+        NewsDto newsDto = new NewsDto();
+
+        newsDto.setId( news.getId() );
+        newsDto.setName( news.getName() );
+        newsDto.setShortDescription( news.getShortDescription() );
+        newsDto.setContent( news.getContent() );
+        newsDto.setAttachments( attachmentListToAttachmentDtoList( news.getAttachments() ) );
+
+        return newsDto;
+    }
+}
