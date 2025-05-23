@@ -11,7 +11,7 @@ import lombok.Setter;
 @Setter
 public class ResLoginDTO {
 
-    @JsonProperty("access_token")
+    @JsonProperty("accessToken")
     private String accessToken;
     private UserLogin user;
 
@@ -23,6 +23,13 @@ public class ResLoginDTO {
         private long id;
         private String email;
         private String name;
+        private String role;
+        
+        public UserLogin(long id, String email, String name) {
+            this.id = id;
+            this.email = email;
+            this.name = name;
+        }
     }
 
 //    public static class UserGetAccount {

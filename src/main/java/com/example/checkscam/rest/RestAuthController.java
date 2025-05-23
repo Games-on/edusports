@@ -51,24 +51,35 @@ public class RestAuthController {
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<ResLoginDTO>> login(@Valid @RequestBody LoginDTO loginDto) {
         try {
+            System.out.println("Login attempt for user: " + loginDto.getUsername());
+            
             // Nạp input gồm username/password vào Security
             UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                     loginDto.getUsername(), loginDto.getPassword());
 
             // xác thực người dùng => cần viết hàm loadUserByUsername
             Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
+            System.out.println("Authentication successful for: " + authentication.getName());
 
             // create a token
             String access_token = this.securityUtil.createAccessToken(authentication);
             SecurityContextHolder.getContext().setAuthentication(authentication);
+            System.out.println("Access token created: " + access_token.substring(0, 20) + "...");
 
             ResLoginDTO res = new ResLoginDTO();
             User currentUserDB = this.userService.handleGetUserByUsername(loginDto.getUsername());
             if (currentUserDB != null) {
+                String userRole = "USER"; // Default role
+                if (currentUserDB.getRoles() != null && !currentUserDB.getRoles().isEmpty()) {
+                    userRole = currentUserDB.getRoles().iterator().next().getName().toString();
+                }
+                
                 ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(
                         currentUserDB.getId(),
                         currentUserDB.getEmail(),
-                        currentUserDB.getName());
+                        currentUserDB.getName(),
+                        userRole
+                );
                 res.setUser(userLogin);
             }
             res.setAccessToken(access_token);
@@ -83,16 +94,19 @@ public class RestAuthController {
             ResponseCookie resCookies = ResponseCookie
                     .from("refresh_token", refresh_token)
                     .httpOnly(true)
-                    .secure(true)
+                    .secure(false) // Set to false for localhost
                     .path("/")
                     .maxAge(refreshTokenExpiration)
                     .build();
 
+            System.out.println("Login successful for user: " + loginDto.getUsername());
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, resCookies.toString())
                     .body(ApiResponse.success("Login successful", res));
                     
         } catch (Exception e) {
+            System.out.println("Login failed for user: " + loginDto.getUsername() + ", error: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest()
                     .body(ApiResponse.error("Login failed: " + e.getMessage()));
         }
@@ -123,26 +137,32 @@ public class RestAuthController {
             String email = SecurityUtil.getCurrentUserLogin().orElse("");
 
             if (email.isEmpty()) {
-                return ResponseEntity.badRequest()
+                return ResponseEntity.status(401)
                         .body(ApiResponse.error("User not authenticated"));
             }
 
             User currentUserDB = this.userService.handleGetUserByUsername(email);
             if (currentUserDB == null) {
-                return ResponseEntity.badRequest()
+                return ResponseEntity.status(401)
                         .body(ApiResponse.error("User not found"));
+            }
+
+            String userRole = "USER"; // Default role
+            if (currentUserDB.getRoles() != null && !currentUserDB.getRoles().isEmpty()) {
+                userRole = currentUserDB.getRoles().iterator().next().getName().toString();
             }
 
             ResLoginDTO.UserLogin userLogin = new ResLoginDTO.UserLogin(
                     currentUserDB.getId(),
                     currentUserDB.getEmail(),
-                    currentUserDB.getName());
+                    currentUserDB.getName(),
+                    userRole);
 
             return ResponseEntity.ok()
                     .body(ApiResponse.success("User account retrieved", userLogin));
                     
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
+            return ResponseEntity.status(401)
                     .body(ApiResponse.error("Failed to get account: " + e.getMessage()));
         }
     }
