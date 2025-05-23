@@ -2,10 +2,8 @@ package com.example.checkscam.service.mapper;
 
 import com.example.checkscam.dto.AttachmentDto;
 import com.example.checkscam.dto.NewsDto;
-import com.example.checkscam.dto.ReportDto;
 import com.example.checkscam.entity.Attachment;
 import com.example.checkscam.entity.News;
-import com.example.checkscam.entity.Report;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.processing.Generated;
@@ -13,8 +11,8 @@ import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-05-15T11:13:48+0700",
-    comments = "version: 1.5.5.Final, compiler: IncrementalProcessingEnvironment from gradle-language-java-8.13.jar, environment: Java 22.0.1 (Oracle Corporation)"
+    date = "2025-05-23T14:27:32+0700",
+    comments = "version: 1.5.5.Final, compiler: IncrementalProcessingEnvironment from gradle-language-java-8.13.jar, environment: Java 17.0.7 (Oracle Corporation)"
 )
 @Component
 public class AttachmentMapperImpl implements AttachmentMapper {
@@ -29,31 +27,9 @@ public class AttachmentMapperImpl implements AttachmentMapper {
 
         attachmentDto.id( attachment.getId() );
         attachmentDto.url( attachment.getUrl() );
-        attachmentDto.report( reportToReportDto( attachment.getReport() ) );
         attachmentDto.news( newsToNewsDto( attachment.getNews() ) );
 
         return attachmentDto.build();
-    }
-
-    protected ReportDto reportToReportDto(Report report) {
-        if ( report == null ) {
-            return null;
-        }
-
-        ReportDto reportDto = new ReportDto();
-
-        reportDto.setId( report.getId() );
-        reportDto.setInfo( report.getInfo() );
-        reportDto.setDescription( report.getDescription() );
-        reportDto.setStatus( report.getStatus() );
-        reportDto.setType( report.getType() );
-        reportDto.setIdScamTypeAfterHandle( report.getIdScamTypeAfterHandle() );
-        reportDto.setEmailAuthorReport( report.getEmailAuthorReport() );
-        reportDto.setReason( report.getReason() );
-        reportDto.setInfoDescription( report.getInfoDescription() );
-        reportDto.setDateReport( report.getDateReport() );
-
-        return reportDto;
     }
 
     protected List<AttachmentDto> attachmentListToAttachmentDtoList(List<Attachment> list) {

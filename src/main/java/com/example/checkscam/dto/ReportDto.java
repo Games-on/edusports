@@ -1,6 +1,5 @@
 package com.example.checkscam.dto;
 
-import com.example.checkscam.entity.Report;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

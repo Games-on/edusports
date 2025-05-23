@@ -2,40 +2,428 @@
 <databaseChangeLog
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="
-          http://www.liquibase.org/xml/ns/dbchangelog
-          https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
 
-    <changeSet id="20250429-001" author="tientm">
-        <sqlFile path="db/sql/20250429_init_db.sql"/>
+    <!-- ============================================== -->
+    <!-- SCHOOL SPORTS TOURNAMENT SYSTEM - UPDATED -->
+    <!-- Author: school-sports | Date: 2025-05-23 -->
+    <!-- Tổng cộng: 7 bảng chính - Tất cả ID đã thống nhất thành INT -->
+    <!-- ============================================== -->
+
+    <!-- 1. Table: users - Đơn giản hóa -->
+    <changeSet id="20250523-0001" author="school-sports">
+        <createTable tableName="users">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="email" type="varchar(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="password" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_active" type="boolean" defaultValueBoolean="true"/>
+        </createTable>
     </changeSet>
-    <changeSet id="20250429-001" author="games-on">
-        <preConditions onFail="MARK_RAN">
-            <columnExists tableName="users" columnName="created_at"/>
-            <columnExists tableName="users" columnName="is_active"/>
-        </preConditions>
-        <dropColumn tableName="users" columnName="created_at"/>
-        <dropColumn tableName="users" columnName="is_active"/>
+
+    <!-- 2. Table: role - Đơn giản hóa -->
+    <changeSet id="20250523-0002" author="school-sports">
+        <createTable tableName="role">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+        </createTable>
     </changeSet>
-    <changeSet id="20250502-001" author="tientm">
-        <sqlFile path="db/sql/20250502_alter_table.sql"/>
+
+    <!-- 3. Table: user_roles - Cập nhật kiểu dữ liệu -->
+    <changeSet id="20250523-0003" author="school-sports">
+        <createTable tableName="user_roles">
+            <column name="user_id" type="int">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="role_id" type="int">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="user_roles"
+                baseColumnNames="user_id"
+                constraintName="fk_user_roles_user_id"
+                referencedTableName="users"
+                referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="user_roles"
+                baseColumnNames="role_id"
+                constraintName="fk_user_roles_role_id"
+                referencedTableName="role"
+                referencedColumnNames="id"/>
     </changeSet>
-    <changeSet id="20250504-001" author="tientm">
-        <sqlFile path="db/sql/20250504_alter_table_report.sql"/>
+
+    <!-- 4. Table: tournaments - Thống nhất ID thành INT -->
+    <changeSet id="20250523-0004" author="school-sports">
+        <createTable tableName="tournaments">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sport_type" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="text"/>
+            <column name="max_teams" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="current_teams" type="int" defaultValueNumeric="0"/>
+            <column name="start_date" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="end_date" type="datetime"/>
+            <column name="location" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="registration_deadline" type="datetime"/>
+            <column name="status" type="ENUM('REGISTRATION', 'ONGOING', 'COMPLETED', 'CANCELLED')" defaultValue="REGISTRATION"/>
+            <column name="winner_team_id" type="int"/>
+            <column name="runner_up_team_id" type="int"/>
+            <column name="rules" type="text"/>
+            <column name="prize_info" type="text"/>
+            <column name="contact_info" type="text"/>
+            <column name="created_at" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_updated_at" type="bigint"/>
+            <column name="last_updated_by" type="int"/>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="tournaments"
+                baseColumnNames="created_by"
+                constraintName="fk_tournaments_created_by"
+                referencedTableName="users"
+                referencedColumnNames="id"/>
     </changeSet>
-    <changeSet id="20250505-001" author="tientm">
-        <sqlFile path="db/sql/20250505_add_table_scam_type.sql"/>
+
+    <!-- 5. Table: teams - Thống nhất ID thành INT -->
+    <changeSet id="20250523-0005" author="school-sports">
+        <createTable tableName="teams">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tournament_id" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="name" type="varchar(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="team_color" type="varchar(20)"/>
+            <column name="member_count" type="int" defaultValueNumeric="0"/>
+            <column name="captain_user_id" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="contact_info" type="text"/>
+            <column name="status" type="ENUM('ACTIVE', 'ELIMINATED', 'WITHDRAWN')" defaultValue="ACTIVE"/>
+            <column name="logo_url" type="varchar(500)"/>
+            <column name="created_at" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_updated_at" type="bigint"/>
+            <column name="last_updated_by" type="int"/>
+        </createTable>
+        <addUniqueConstraint
+                tableName="teams"
+                columnNames="tournament_id, name"
+                constraintName="uk_team_name_tournament"/>
+        <addForeignKeyConstraint
+                baseTableName="teams"
+                baseColumnNames="tournament_id"
+                constraintName="fk_teams_tournament_id"
+                referencedTableName="tournaments"
+                referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="teams"
+                baseColumnNames="captain_user_id"
+                constraintName="fk_teams_captain_user_id"
+                referencedTableName="users"
+                referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="teams"
+                baseColumnNames="created_by"
+                constraintName="fk_teams_created_by"
+                referencedTableName="users"
+                referencedColumnNames="id"/>
     </changeSet>
-    <changeSet id="20250505-002" author="tientm">
-        <sqlFile path="db/sql/20250505_alter_table_report.sql"/>
+
+    <!-- 6. Table: matches - Thống nhất ID thành INT -->
+    <changeSet id="20250523-0006" author="school-sports">
+        <createTable tableName="matches">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tournament_id" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="round_number" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="round_name" type="varchar(100)"/>
+            <column name="team1_id" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="team2_id" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="match_date" type="datetime">
+                <constraints nullable="false"/>
+            </column>
+            <column name="location" type="varchar(255)"/>
+            <column name="status" type="ENUM('SCHEDULED', 'LIVE', 'COMPLETED', 'CANCELLED')" defaultValue="SCHEDULED"/>
+            <column name="team1_score" type="int" defaultValueNumeric="0"/>
+            <column name="team2_score" type="int" defaultValueNumeric="0"/>
+            <column name="winner_team_id" type="int"/>
+            <column name="match_number" type="int"/>
+            <column name="referee" type="varchar(255)"/>
+            <column name="notes" type="text"/>
+            <column name="created_at" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_updated_at" type="bigint"/>
+            <column name="last_updated_by" type="int"/>
+        </createTable>
+        <addForeignKeyConstraint
+                baseTableName="matches"
+                baseColumnNames="tournament_id"
+                constraintName="fk_matches_tournament_id"
+                referencedTableName="tournaments"
+                referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="matches"
+                baseColumnNames="team1_id"
+                constraintName="fk_matches_team1_id"
+                referencedTableName="teams"
+                referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="matches"
+                baseColumnNames="team2_id"
+                constraintName="fk_matches_team2_id"
+                referencedTableName="teams"
+                referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="matches"
+                baseColumnNames="winner_team_id"
+                constraintName="fk_matches_winner_team_id"
+                referencedTableName="teams"
+                referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="matches"
+                baseColumnNames="created_by"
+                constraintName="fk_matches_created_by"
+                referencedTableName="users"
+                referencedColumnNames="id"/>
     </changeSet>
-    <changeSet id="20250505" author="games-on">
-        <sqlFile path="db/sql/20250505_refresh_token.sql"/>
+
+    <!-- 7. Table: tournament_registrations - Thống nhất ID thành INT -->
+    <changeSet id="20250523-0007" author="school-sports">
+        <createTable tableName="tournament_registrations">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="tournament_id" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="user_id" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="ENUM('PENDING', 'APPROVED', 'REJECTED')" defaultValue="PENDING"/>
+            <column name="registration_date" type="datetime"/>
+            <column name="notes" type="text"/>
+            <column name="created_at" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_by" type="int">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_updated_at" type="bigint"/>
+            <column name="last_updated_by" type="int"/>
+        </createTable>
+        <addUniqueConstraint
+                tableName="tournament_registrations"
+                columnNames="tournament_id, user_id"
+                constraintName="uk_tournament_user_registration"/>
+        <addForeignKeyConstraint
+                baseTableName="tournament_registrations"
+                baseColumnNames="tournament_id"
+                constraintName="fk_tournament_registrations_tournament_id"
+                referencedTableName="tournaments"
+                referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="tournament_registrations"
+                baseColumnNames="user_id"
+                constraintName="fk_tournament_registrations_user_id"
+                referencedTableName="users"
+                referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="tournament_registrations"
+                baseColumnNames="created_by"
+                constraintName="fk_tournament_registrations_created_by"
+                referencedTableName="users"
+                referencedColumnNames="id"/>
     </changeSet>
-    <changeSet id="20250506-001" author="tientm">
-        <sqlFile path="db/sql/20250506_alter_table_bank_scam.sql"/>
+
+    <!-- 8. Table: news - Giữ nguyên -->
+    <changeSet id="20250523-0008" author="school-sports">
+        <createTable tableName="news">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="url" type="text">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp" defaultValueComputed="CURRENT_TIMESTAMP"/>
+        </createTable>
     </changeSet>
-    <changeSet id="20250506" author="games-on">
-        <sqlFile path="db/sql/20250506_change_news.sql"/>
+
+    <!-- Add foreign keys for tournament winners -->
+    <changeSet id="20250523-0009" author="school-sports">
+        <addForeignKeyConstraint
+                baseTableName="tournaments"
+                baseColumnNames="winner_team_id"
+                constraintName="fk_tournaments_winner_team_id"
+                referencedTableName="teams"
+                referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="tournaments"
+                baseColumnNames="runner_up_team_id"
+                constraintName="fk_tournaments_runner_up_team_id"
+                referencedTableName="teams"
+                referencedColumnNames="id"/>
     </changeSet>
+
+    <!-- Create indexes for performance -->
+    <changeSet id="20250523-1001" author="school-sports">
+        <createIndex indexName="idx_users_email" tableName="users">
+            <column name="email"/>
+        </createIndex>
+        <createIndex indexName="idx_tournaments_status" tableName="tournaments">
+            <column name="status"/>
+        </createIndex>
+        <createIndex indexName="idx_tournaments_start_date" tableName="tournaments">
+            <column name="start_date"/>
+        </createIndex>
+        <createIndex indexName="idx_teams_tournament" tableName="teams">
+            <column name="tournament_id"/>
+        </createIndex>
+        <createIndex indexName="idx_teams_captain" tableName="teams">
+            <column name="captain_user_id"/>
+        </createIndex>
+        <createIndex indexName="idx_matches_tournament" tableName="matches">
+            <column name="tournament_id"/>
+        </createIndex>
+        <createIndex indexName="idx_matches_date" tableName="matches">
+            <column name="match_date"/>
+        </createIndex>
+        <createIndex indexName="idx_matches_status" tableName="matches">
+            <column name="status"/>
+        </createIndex>
+        <createIndex indexName="idx_matches_round" tableName="matches">
+            <column name="tournament_id"/>
+            <column name="round_number"/>
+        </createIndex>
+        <createIndex indexName="idx_tournament_registrations_tournament" tableName="tournament_registrations">
+            <column name="tournament_id"/>
+        </createIndex>
+        <createIndex indexName="idx_tournament_registrations_user" tableName="tournament_registrations">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex indexName="idx_tournament_registrations_status" tableName="tournament_registrations">
+            <column name="status"/>
+        </createIndex>
+        <createIndex indexName="idx_news_created_at" tableName="news">
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Insert initial data -->
+    <changeSet id="20250523-2001" author="school-sports">
+        <!-- Default roles -->
+        <insert tableName="role">
+            <column name="name" value="ADMIN"/>
+        </insert>
+        <insert tableName="role">
+            <column name="name" value="STUDENT"/>
+        </insert>
+        <insert tableName="role">
+            <column name="name" value="ORGANIZER"/>
+        </insert>
+
+        <!-- System user -->
+        <insert tableName="users">
+            <column name="name" value="System Administrator"/>
+            <column name="email" value="system@schoolsports.edu.vn"/>
+            <column name="password" value="$2a$10$dummy.hashed.password.for.system.user"/>
+            <column name="is_active" valueBoolean="true"/>
+        </insert>
+
+        <!-- Assign admin role to system user (user_id=1, role_id=1) -->
+        <insert tableName="user_roles">
+            <column name="user_id" valueNumeric="1"/>
+            <column name="role_id" valueNumeric="1"/>
+        </insert>
+
+        <!-- Sample tournaments với INT IDs -->
+        <insert tableName="tournaments">
+            <column name="name" value="Giải Cầu lông Sinh viên 2025"/>
+            <column name="sport_type" value="Cầu lông"/>
+            <column name="description" value="Giải đấu cầu lông dành cho sinh viên toàn trường"/>
+            <column name="max_teams" valueNumeric="16"/>
+            <column name="start_date" value="2025-06-01 08:00:00"/>
+            <column name="location" value="Nhà thi đấu A"/>
+            <column name="registration_deadline" value="2025-05-25 23:59:59"/>
+            <column name="status" value="REGISTRATION"/>
+            <column name="rules" value="Knockout 16 đội, thi đấu 3 sets"/>
+            <column name="contact_info" value="Email: caulongsv@gmail.com"/>
+            <column name="created_at" valueNumeric="1716953600000"/>
+            <column name="created_by" valueNumeric="1"/>
+        </insert>
+        <insert tableName="tournaments">
+            <column name="name" value="Giải Bóng đá Sinh viên 2025"/>
+            <column name="sport_type" value="Bóng đá"/>
+            <column name="description" value="Giải đấu bóng đá 11 người dành cho sinh viên"/>
+            <column name="max_teams" valueNumeric="8"/>
+            <column name="start_date" value="2025-06-15 14:00:00"/>
+            <column name="location" value="Sân bóng B"/>
+            <column name="registration_deadline" value="2025-06-10 23:59:59"/>
+            <column name="status" value="REGISTRATION"/>
+            <column name="rules" value="Knockout 8 đội, mỗi trận 90 phút"/>
+            <column name="contact_info" value="Email: bongdasv@gmail.com"/>
+            <column name="created_at" valueNumeric="1716953600000"/>
+            <column name="created_by" valueNumeric="1"/>
+        </insert>
+
+        <!-- Sample news -->
+        <insert tableName="news">
+            <column name="url" value="https://schoolsports.edu.vn/news/tournament-registration-open"/>
+        </insert>
+        <insert tableName="news">
+            <column name="url" value="https://schoolsports.edu.vn/news/badminton-championship-2025"/>
+        </insert>
+    </changeSet>
+
 </databaseChangeLog>

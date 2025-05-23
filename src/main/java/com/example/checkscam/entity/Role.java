@@ -1,27 +1,27 @@
 package com.example.checkscam.entity;
 
-import com.example.checkscam.constant.RoleName;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import jakarta.persistence.*;
-import lombok.*;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import jakarta.persistence.*;
+import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "role",
-        uniqueConstraints = @UniqueConstraint(name = "name", columnNames = "name"))
-@Getter
-@Setter
+@Table(name = "role")
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Role extends BaseEntity {
+public class Role {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Enumerated(EnumType.STRING) // Sử dụng EnumType.STRING để lưu tên role vào database
-    @Column(length = 50, nullable = false)
-    private RoleName name; // Thay đổi kiểu dữ liệu thành RoleName
+    @Column(name = "name", nullable = false, unique = true)
+    private String name;
 
-    @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
-    @JsonBackReference
-    private Set<User> users;
+    @ManyToMany(mappedBy = "roles")
+    private Set<User> users = new HashSet<>();
 }
