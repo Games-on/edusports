@@ -13,8 +13,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class News extends BaseEntity {
-
+public class News  {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     @Column(nullable = false)
     private String name;
     @Column(columnDefinition = "TEXT")

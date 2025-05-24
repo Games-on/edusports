@@ -9,6 +9,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -22,44 +23,59 @@ public class DataInitializer {
     private final RoleRepository roleRepository;
 
     @PostConstruct
+    @Transactional  // 👈 Thêm annotation này để đảm bảo transaction được commit
     public void init() {
 
         // Tạo các role nếu chưa tồn tại
         if (roleRepository.count() == 0) {
             Role adminRole = Role.builder().name(RoleName.ADMIN).build();
-            Role collabRole = Role.builder().name(RoleName.COLLAB).build();
+            Role organizerRole = Role.builder().name(RoleName.ORGANIZER).build();
+            Role studentRole = Role.builder().name(RoleName.STUDENT).build();
+            
             roleRepository.save(adminRole);
-            roleRepository.save(collabRole);
-            System.out.println("Đã tạo các role ADMIN và COLLAB.");
+            roleRepository.save(organizerRole);
+            roleRepository.save(studentRole);
+            
+            System.out.println("✅ Đã tạo các role ADMIN, ORGANIZER, và STUDENT.");
         }
 
-        // Tạo user admin và collab mặc định nếu chưa tồn tại
-        if (userRepository.count() == 0) {
-            // Tạo user admin
+        // Tạo user admin mặc định nếu chưa tồn tại
+        if (userRepository.findByEmail("admin@gmail.com").isEmpty()) {
             Role adminRole = roleRepository.findByName(RoleName.ADMIN);
+            
+            if (adminRole == null) {
+                System.out.println("❌ Lỗi: Không tìm thấy ADMIN role!");
+                return;
+            }
+            
             Set<Role> adminRoles = new HashSet<>();
             adminRoles.add(adminRole);
 
             User adminUser = new User();
             adminUser.setName("Admin User");
             adminUser.setEmail("admin@gmail.com");
-            adminUser.setPassword(passwordEncoder.encode("123456")); // Thay đổi password mặc định
+            adminUser.setPassword(passwordEncoder.encode("123456"));
+            adminUser.setActive(true);
             adminUser.setRoles(adminRoles);
+            
             userRepository.save(adminUser);
-            System.out.println("Đã tạo tài khoản ADMIN mặc định.");
+            System.out.println("✅ Đã tạo tài khoản ADMIN mặc định (admin@gmail.com / 123456).");
+        }
+        
+        // Tạo user organizer mặc định nếu chưa tồn tại
+        if (userRepository.findByEmail("organizer@gmail.com").isEmpty()) {
+            Role organizerRole = roleRepository.findByName(RoleName.ORGANIZER);
+            Set<Role> organizerRoles = new HashSet<>();
+            organizerRoles.add(organizerRole);
 
-            // Tạo user collab
-            Role collabRole = roleRepository.findByName(RoleName.COLLAB);
-            Set<Role> collabRoles = new HashSet<>();
-            collabRoles.add(collabRole);
-
-            User collabUser = new User();
-            collabUser.setName("Collab User");
-            collabUser.setEmail("collab@gmail.com");
-            collabUser.setPassword(passwordEncoder.encode("123456")); // Thay đổi password mặc định
-            collabUser.setRoles(collabRoles);
-            userRepository.save(collabUser);
-            System.out.println("Đã tạo tài khoản COLLAB mặc định.");
+            User organizerUser = new User();
+            organizerUser.setName("Organizer User");
+            organizerUser.setEmail("organizer@gmail.com");
+            organizerUser.setPassword(passwordEncoder.encode("123456"));
+            organizerUser.setActive(true);
+            organizerUser.setRoles(organizerRoles);
+            userRepository.save(organizerUser);
+            System.out.println("✅ Đã tạo tài khoản ORGANIZER mặc định (organizer@gmail.com / 123456).");
         }
     }
 }

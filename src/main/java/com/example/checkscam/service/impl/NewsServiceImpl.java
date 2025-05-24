@@ -96,7 +96,7 @@ public class NewsServiceImpl {
             return List.of();
         }
 
-        int current = attachmentRepository.countByReportId(newsId);
+        int current = attachmentRepository.countByNewsId(newsId);
         if (current + validFiles.size() > MAXIMUM_ATTACHMENTS_PER_REPORT) {
             throw new InvalidParamException(String.format(
                     "newsId %d đã có %d file, tối đa %d. Không thể thêm %d file.",

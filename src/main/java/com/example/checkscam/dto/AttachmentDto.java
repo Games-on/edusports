@@ -12,7 +12,6 @@ import lombok.*;
 public class AttachmentDto {
     private Long id;
     private String url;
-    private ReportDto report;
     private NewsDto news;
 
     public AttachmentDto(Attachment attachment) {
