@@ -31,7 +31,7 @@ public class UserDetailsCustom implements UserDetailsService {
 
         // Lấy danh sách quyền từ User entity
         List<SimpleGrantedAuthority> authorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName()))
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().toString()))
                 .collect(Collectors.toList());
 
         return new org.springframework.security.core.userdetails.User(
