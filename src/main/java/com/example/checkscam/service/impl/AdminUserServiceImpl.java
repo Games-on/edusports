@@ -79,10 +79,10 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Transactional(readOnly = true)
     public PagedResponseDTO<AdminUserResponseDTO> getAllUsers(
             Pageable pageable, String search, String role, Boolean isActive) {
-        
+
         Specification<User> spec = createUserSpecification(search, role, isActive);
         Page<User> userPage = userRepository.findAll(spec, pageable);
-        
+
         List<AdminUserResponseDTO> userDTOs = userPage.getContent().stream()
                 .map(this::convertToAdminResponseDTO)
                 .collect(Collectors.toList());
@@ -150,14 +150,21 @@ public class AdminUserServiceImpl implements AdminUserService {
         return convertToAdminResponseDTO(savedUser);
     }
 
+//    @Override
+//    public void deleteUser(Long id) {
+//        User user = userRepository.findById(id)
+//                .orElseThrow(() -> new DataNotFoundException("User not found with id: " + id));
+//
+//        // Soft delete
+//        user.setActive(false);
+//        userRepository.save(user);
+//    }
+
     @Override
+    @Transactional
     public void deleteUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("User not found with id: " + id));
-        
-        // Soft delete
-        user.setActive(false);
-        userRepository.save(user);
+        User user = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException("User not found with id: " + id));
+        userRepository.delete(user);
     }
 
     @Override
