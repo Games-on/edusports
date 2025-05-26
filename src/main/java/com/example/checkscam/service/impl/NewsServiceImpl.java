@@ -10,7 +10,7 @@ import com.example.checkscam.exception.FileUploadValidationException;
 import com.example.checkscam.exception.InvalidParamException;
 import com.example.checkscam.repository.AttachmentRepository;
 import com.example.checkscam.repository.NewsRepository;
-import jakarta.transaction.Transactional;
+import jakarta.transaction.Transactional; // Import này rất quan trọng
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -27,15 +27,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import java.time.LocalDateTime; // Import LocalDateTime nếu chưa có
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class NewsServiceImpl {
+public class NewsServiceImpl { // Nên implement một interface NewsService nếu chưa có
     private final NewsRepository newsRepository;
     private final FileUtils fileUtils;
     private final AttachmentRepository attachmentRepository;
     public static final int MAXIMUM_ATTACHMENTS_PER_REPORT = 5;
-    //get all news
+
+    // get all news
     public List<News> getAllNews() {
         return newsRepository.findAll();
     }
@@ -51,32 +54,64 @@ public class NewsServiceImpl {
         newsEntity.setName(news.getName());
         newsEntity.setContent(news.getContent());
         newsEntity.setShortDescription(news.getShortDescription());
+        newsEntity.setAuthor("Admin"); // Tạm thời hardcode, nên lấy từ SecurityContextHolder
+        // createdAt sẽ được tự động điền bởi @PrePersist hoặc Spring Data JPA Auditing
         return newsRepository.save(newsEntity);
     }
 
     // put news
-    public News updateNews(Long id, NewsRequestDto news) {
+    public News updateNews(Long id, NewsRequestDto news) throws CheckScamException {
         Optional<News> existingNews = newsRepository.findById(id);
         if (existingNews.isPresent()) {
             News updatedNews = existingNews.get();
             updatedNews.setName(news.getName());
             updatedNews.setShortDescription(news.getShortDescription());
             updatedNews.setContent(news.getContent());
-            updatedNews.setAttachments(existingNews.get().getAttachments());
-            return newsRepository.save(updatedNews); // Lưu bản ghi đã cập nhật
+            // UpdatedAt (nếu có) sẽ được tự động điền bởi @PreUpdate hoặc Auditing
+            return newsRepository.save(updatedNews);
         } else {
-            return null;
+            // Có thể throw DataNotFoundException ở đây thay vì trả về null
+            throw new CheckScamException(ErrorCodeEnum.NOT_FOUND);
         }
     }
 
-    // DELETE news
-    public boolean deleteNews(Long id) {
-        Optional<News> news = newsRepository.findById(id);
-        if (news.isPresent()) {
-            newsRepository.delete(news.get());
+    // SỬA ĐỔI QUAN TRỌNG NHẤT Ở ĐÂY: XÓA NEWS VÀ ATTACHMENTS LIÊN QUAN
+    @Transactional // Đảm bảo toàn bộ thao tác là một giao dịch atomic
+    public boolean deleteNews(Long id) throws CheckScamException {
+        Optional<News> newsOptional = newsRepository.findById(id);
+        if (newsOptional.isPresent()) {
+            News newsToDelete = newsOptional.get();
+
+            // 1. Lấy tất cả các attachments liên quan đến tin tức này
+            // Sử dụng newsToDelete.getAttachments() nếu bạn đã FetchType.EAGER hoặc đã load chúng.
+            // Nếu không, bạn cần một phương thức findByNewsId trong AttachmentRepository.
+            List<Attachment> attachments = attachmentRepository.findByNewsId(id);
+
+            // 2. Xóa các file vật lý trên server TRƯỚC khi xóa bản ghi database
+            for (Attachment attachment : attachments) {
+                try {
+                    fileUtils.deleteFile(attachment.getUrl()); // Giả sử getUrl() trả về tên file/đường dẫn cần để xóa
+                    log.info("Deleted physical file: {}", attachment.getUrl());
+                } catch (IOException e) {
+                    log.error("Failed to delete physical file {}: {}", attachment.getUrl(), e.getMessage());
+                    // Tùy chọn: bạn có thể chọn throw exception ở đây hoặc chỉ log lỗi
+                    // và tiếp tục xóa các bản ghi database.
+                }
+            }
+
+            // 3. Xóa tất cả các bản ghi attachment khỏi database
+            attachmentRepository.deleteAll(attachments);
+            log.info("Deleted {} attachments for news ID: {}", attachments.size(), id);
+
+
+            // 4. Cuối cùng, xóa bản ghi news khỏi database
+            newsRepository.delete(newsToDelete);
+            log.info("Deleted news with ID: {}", id);
             return true;
         } else {
-            return false;
+            // Nếu không tìm thấy tin tức, có thể throw một ngoại lệ hoặc trả về false
+            // Tùy thuộc vào yêu cầu nghiệp vụ của bạn.
+            throw new CheckScamException(ErrorCodeEnum.NOT_FOUND);
         }
     }
 
@@ -93,7 +128,8 @@ public class NewsServiceImpl {
                         .toList();
 
         if (validFiles.isEmpty()) {
-            return List.of();
+            // Có thể throw một InvalidParamException cụ thể nếu không có file nào được cung cấp
+            throw new InvalidParamException("Không có tệp đính kèm hợp lệ nào được cung cấp.");
         }
 
         int current = attachmentRepository.countByNewsId(newsId);
@@ -106,7 +142,7 @@ public class NewsServiceImpl {
         List<Attachment> saved = new ArrayList<>();
 
         for (MultipartFile file : validFiles) {
-            if (file.getSize() > 10 * 1024 * 1024) {
+            if (file.getSize() > 10 * 1024 * 1024) { // 10MB
                 throw new FileUploadValidationException(
                         "Kích thước file vượt quá 10MB: " + file.getOriginalFilename(),
                         HttpStatus.PAYLOAD_TOO_LARGE);
@@ -122,7 +158,7 @@ public class NewsServiceImpl {
 
             Attachment toSave = Attachment.builder()
                     .news(news)
-                    .url(storedName)
+                    .url(storedName) // url ở đây thường là tên file đã được lưu trên server
                     .build();
 
             saved.add(attachmentRepository.save(toSave));
@@ -137,7 +173,7 @@ public class NewsServiceImpl {
         Path imagePath = fileUtils.resolve(imageName);
 
         if (!Files.exists(imagePath)) {
-            Path fallback = fileUtils.resolve("notfound.jpeg");
+            Path fallback = fileUtils.resolve("notfound.jpeg"); // Đường dẫn đến ảnh mặc định nếu không tìm thấy
             if (Files.exists(fallback)) {
                 return new UrlResource(fallback.toUri());
             }
@@ -159,6 +195,4 @@ public class NewsServiceImpl {
             throw new IllegalArgumentException("Tên file không hợp lệ");
         }
     }
-
-
 }
