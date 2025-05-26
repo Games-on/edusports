@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Fix matches table to allow null team1_id and team2_id for skeleton matches -->
+    <changeSet id="20250526-0001" author="school-sports">
+        <comment>Allow team1_id and team2_id to be null in matches table for skeleton matches</comment>
+        
+        <!-- Drop existing foreign key constraints -->
+        <dropForeignKeyConstraint baseTableName="matches" constraintName="fk_matches_team1_id"/>
+        <dropForeignKeyConstraint baseTableName="matches" constraintName="fk_matches_team2_id"/>
+        
+        <!-- Modify columns to allow null -->
+        <dropNotNullConstraint tableName="matches" columnName="team1_id" columnDataType="bigint"/>
+        <dropNotNullConstraint tableName="matches" columnName="team2_id" columnDataType="bigint"/>
+        
+        <!-- Re-add foreign key constraints without NOT NULL -->
+        <addForeignKeyConstraint
+                baseTableName="matches"
+                baseColumnNames="team1_id"
+                constraintName="fk_matches_team1_id"
+                referencedTableName="teams"
+                referencedColumnNames="id"/>
+        <addForeignKeyConstraint
+                baseTableName="matches"
+                baseColumnNames="team2_id"
+                constraintName="fk_matches_team2_id"
+                referencedTableName="teams"
+                referencedColumnNames="id"/>
+    </changeSet>
+
+</databaseChangeLog>

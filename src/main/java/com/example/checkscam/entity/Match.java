@@ -28,11 +28,11 @@ public class Match {
     private String roundName;
 
     @ManyToOne
-    @JoinColumn(name = "team1_id", nullable = false)
+    @JoinColumn(name = "team1_id", nullable = true)  // Allow null for skeleton matches
     private Team team1;
 
     @ManyToOne
-    @JoinColumn(name = "team2_id", nullable = false)
+    @JoinColumn(name = "team2_id", nullable = true)  // Allow null for skeleton matches
     private Team team2;
 
     @Column(name = "match_date", nullable = false)

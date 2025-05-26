@@ -53,6 +53,11 @@ public class MatchServiceImpl implements MatchService {
             matches = matchRepository.findByTournamentWithDetails(tournament);
         }
 
+        // Handle empty matches gracefully
+        if (matches == null) {
+            matches = new ArrayList<>();
+        }
+
         List<MatchResponseDTO> matchDTOs = matches.stream()
                 .map(this::convertToMatchResponseDTO)
                 .collect(Collectors.toList());

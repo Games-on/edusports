@@ -77,8 +77,13 @@ public class TeamServiceImpl implements TeamService {
                 .orElseThrow(() -> new DataNotFoundException("Tournament not found with id: " + tournamentId));
 
         // Check if tournament is still accepting registrations
-        if (tournament.getRegistrationDeadline() != null && !tournament.getRegistrationDeadline().isAfter(LocalDateTime.now())) {
-            throw new InvalidParamException("Tournament registration period has ended");
+        if (tournament.getRegistrationDeadline() != null) {
+            log.info("Tournament {} - Registration deadline: {}, Current time: {}", 
+                tournament.getId(), tournament.getRegistrationDeadline(), LocalDateTime.now());
+            
+            if (tournament.getRegistrationDeadline().isBefore(LocalDateTime.now())) {
+                throw new InvalidParamException("Tournament registration period has ended");
+            }
         }
 
         // Check if user already registered for this tournament

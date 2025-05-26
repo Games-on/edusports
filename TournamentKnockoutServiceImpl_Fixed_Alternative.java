@@ -43,9 +43,9 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
         Tournament tournament = tournamentRepository.findById(tournamentId)
                 .orElseThrow(() -> new DataNotFoundException("Tournament not found with id: " + tournamentId));
 
-        // Validate tournament status - Allow REGISTRATION or READY_TO_START for re-generation
-        if (tournament.getStatus() != TournamentStatus.REGISTRATION && tournament.getStatus() != TournamentStatus.READY_TO_START) {
-            throw new InvalidParamException("Tournament bracket can only be generated for tournaments in REGISTRATION or READY_TO_START status. Current status: " + tournament.getStatus());
+        // Validate tournament status
+        if (tournament.getStatus() != TournamentStatus.REGISTRATION) {
+            throw new InvalidParamException("Tournament bracket can only be generated for tournaments in REGISTRATION status");
         }
 
         // Get active teams
@@ -57,11 +57,10 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
             throw new InvalidParamException("Need at least 2 teams to generate bracket");
         }
 
-        // Check if bracket already exists - delete existing matches if regenerating
+        // Check if bracket already exists
         List<Match> existingMatches = matchRepository.findByTournament(tournament);
         if (!existingMatches.isEmpty()) {
-            log.info("Deleting {} existing matches for tournament {} to regenerate bracket", existingMatches.size(), tournamentId);
-            matchRepository.deleteAll(existingMatches);
+            throw new InvalidParamException("Tournament bracket already exists. Delete existing matches first.");
         }
 
         // Shuffle teams if requested
@@ -69,24 +68,13 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
             Collections.shuffle(teams);
         }
 
-        // Calculate tournament structure
-        int teamCount = teams.size();
-        int totalRounds = (int) Math.ceil(Math.log(teamCount) / Math.log(2));
-        
         long currentTime = Instant.now().toEpochMilli();
 
-        // Create Round 1 matches
+        // Create only Round 1 matches with actual teams
         List<Match> round1Matches = createRound1Matches(tournament, teams, currentUser, currentTime);
 
-        // Create skeleton matches for subsequent rounds
-        List<List<Match>> allRounds = createSkeletonMatches(tournament, totalRounds, round1Matches.size(), currentUser, currentTime);
-        allRounds.add(0, round1Matches); // Add round 1 to the beginning
-
-        // Save all matches
-        List<Match> allMatches = allRounds.stream()
-                .flatMap(List::stream)
-                .collect(Collectors.toList());
-        matchRepository.saveAll(allMatches);
+        // Save round 1 matches
+        matchRepository.saveAll(round1Matches);
 
         // Update tournament status
         tournament.setStatus(TournamentStatus.READY_TO_START);
@@ -94,8 +82,8 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
         tournament.setLastUpdatedBy(currentUser);
         tournamentRepository.save(tournament);
 
-        // Build response
-        return buildBracketGenerationResponse(tournament, allRounds, teamCount, request.getShuffleTeams());
+        // Build response - only show round 1 for now
+        return buildBracketGenerationResponse(tournament, Arrays.asList(round1Matches), teams.size(), request.getShuffleTeams());
     }
 
     @Override
@@ -146,21 +134,49 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
         // Shuffle winners for random matchups
         Collections.shuffle(winners);
 
-        // Get existing skeleton matches for next round
-        List<Match> nextRoundMatches = matchRepository.findByTournamentAndRound(tournament, nextRound);
-        
-        if (nextRoundMatches.isEmpty()) {
-            throw new InvalidParamException("No skeleton matches found for next round");
-        }
+        // Create next round matches with winners
+        List<Match> nextRoundMatches = createNextRoundMatches(tournament, winners, nextRound, currentUser);
 
-        // Populate next round matches with winners
-        populateNextRoundMatches(nextRoundMatches, winners, currentUser);
-
-        // Save updated matches
+        // Save new matches
         matchRepository.saveAll(nextRoundMatches);
 
         // Build response
         return buildAdvanceRoundResponse(tournament, currentRound, nextRound, winners, nextRoundMatches, false, null);
+    }
+
+    // Helper method to create next round matches
+    private List<Match> createNextRoundMatches(Tournament tournament, List<Team> winners, int roundNumber, User currentUser) {
+        List<Match> matches = new ArrayList<>();
+        String roundName = generateRoundName(roundNumber, calculateTotalRounds(winners.size()));
+        long currentTime = Instant.now().toEpochMilli();
+        
+        // Create matches by pairing winners
+        for (int i = 0; i < winners.size(); i += 2) {
+            if (i + 1 < winners.size()) {
+                Match match = new Match();
+                match.setTournament(tournament);
+                match.setRoundNumber(roundNumber);
+                match.setRoundName(roundName);
+                match.setTeam1(winners.get(i));
+                match.setTeam2(winners.get(i + 1));
+                match.setMatchDate(tournament.getStartDate().plusDays(roundNumber - 1));
+                match.setLocation("Sân chính");
+                match.setStatus(Match.MatchStatus.SCHEDULED);
+                match.setTeam1Score(0);
+                match.setTeam2Score(0);
+                match.setMatchNumber(i/2 + 1);
+                match.setCreatedAt(currentTime);
+                match.setCreatedBy(currentUser);
+                
+                matches.add(match);
+            }
+        }
+        
+        return matches;
+    }
+
+    private int calculateTotalRounds(int teamCount) {
+        return (int) Math.ceil(Math.log(teamCount) / Math.log(2));
     }
 
     @Override
@@ -190,11 +206,8 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
         }
 
         Team champion = finalMatch.getWinnerTeam();
-        Team runnerUp = null;
-        if (finalMatch.getTeam1() != null && finalMatch.getTeam2() != null) {
-            runnerUp = finalMatch.getTeam1().getId().equals(champion.getId()) ? 
-                    finalMatch.getTeam2() : finalMatch.getTeam1();
-        }
+        Team runnerUp = finalMatch.getTeam1().getId().equals(champion.getId()) ? 
+                finalMatch.getTeam2() : finalMatch.getTeam1();
 
         // Update tournament
         long currentTime = Instant.now().toEpochMilli();
@@ -217,16 +230,15 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
                 .filter(match -> match.getWinnerTeam() != null && match.getWinnerTeam().getId().equals(champion.getId()))
                 .count();
 
-        final Team finalRunnerUp = runnerUp; // Create final variable for lambda
-        int runnerUpWins = finalRunnerUp != null ? (int) allMatches.stream()
-                .filter(match -> match.getWinnerTeam() != null && match.getWinnerTeam().getId().equals(finalRunnerUp.getId()))
-                .count() : 0;
+        int runnerUpWins = (int) allMatches.stream()
+                .filter(match -> match.getWinnerTeam() != null && match.getWinnerTeam().getId().equals(runnerUp.getId()))
+                .count();
 
         // Calculate duration
         Duration duration = Duration.between(tournament.getStartDate(), tournament.getEndDate());
         String durationText = formatDuration(duration);
 
-        return buildTournamentCompletionResponse(tournament, champion, finalRunnerUp, 
+        return buildTournamentCompletionResponse(tournament, champion, runnerUp, 
                 championWins, runnerUpWins, completedMatches, durationText);
     }
 
@@ -302,42 +314,6 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
         return round1Matches;
     }
 
-    private List<List<Match>> createSkeletonMatches(Tournament tournament, int totalRounds, int round1MatchCount, User currentUser, long currentTime) {
-        List<List<Match>> allRounds = new ArrayList<>();
-        
-        int matchesInRound = round1MatchCount;
-        
-        for (int round = 2; round <= totalRounds; round++) {
-            matchesInRound = (matchesInRound + 1) / 2; // Next round has half the matches (rounded up)
-            List<Match> roundMatches = new ArrayList<>();
-            
-            String roundName = generateRoundName(round, totalRounds);
-            
-            for (int matchNum = 1; matchNum <= matchesInRound; matchNum++) {
-                Match match = new Match();
-                match.setTournament(tournament);
-                match.setRoundNumber(round);
-                match.setRoundName(roundName);
-                match.setTeam1(null); // Will be populated when previous round completes
-                match.setTeam2(null);
-                match.setMatchDate(tournament.getStartDate().plusDays(round - 1));
-                match.setLocation("Sân chính");
-                match.setStatus(Match.MatchStatus.SCHEDULED);
-                match.setTeam1Score(0);
-                match.setTeam2Score(0);
-                match.setMatchNumber(matchNum);
-                match.setCreatedAt(currentTime);
-                match.setCreatedBy(currentUser);
-                
-                roundMatches.add(match);
-            }
-            
-            allRounds.add(roundMatches);
-        }
-        
-        return allRounds;
-    }
-
     private String generateRoundName(int roundNumber, int totalRounds) {
         if (totalRounds <= 1) {
             return "Chung kết";
@@ -371,23 +347,6 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
             }
         }
         return maxRound; // All rounds completed
-    }
-
-    private void populateNextRoundMatches(List<Match> nextRoundMatches, List<Team> winners, User currentUser) {
-        // Sort matches by match number to ensure consistent order
-        nextRoundMatches.sort(Comparator.comparing(Match::getMatchNumber));
-        
-        int winnerIndex = 0;
-        for (Match match : nextRoundMatches) {
-            if (winnerIndex < winners.size()) {
-                match.setTeam1(winners.get(winnerIndex++));
-            }
-            if (winnerIndex < winners.size()) {
-                match.setTeam2(winners.get(winnerIndex++));
-            }
-            match.setLastUpdatedAt(Instant.now().toEpochMilli());
-            match.setLastUpdatedBy(currentUser);
-        }
     }
 
     private AdvanceRoundResponseDTO completeTournamentAndReturnAdvanceResponse(Tournament tournament, Team champion) {
@@ -557,12 +516,12 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
                                 .build())
                         .totalWins(championWins)
                         .build())
-                .runnerUp(runnerUp != null ? TournamentCompletionResponseDTO.RunnerUpDTO.builder()
+                .runnerUp(TournamentCompletionResponseDTO.RunnerUpDTO.builder()
                         .id(runnerUp.getId())
                         .name(runnerUp.getName())
                         .logoUrl(runnerUp.getLogoUrl())
                         .totalWins(runnerUpWins)
-                        .build() : null)
+                        .build())
                 .stats(TournamentCompletionResponseDTO.StatsDTO.builder()
                         .totalTeams(allTeams.size())
                         .completedMatches(completedMatches)

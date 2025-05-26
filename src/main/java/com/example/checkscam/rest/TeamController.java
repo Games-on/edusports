@@ -54,7 +54,7 @@ public class TeamController {
      * POST /api/tournaments/{tournament_id}/register
      */
     @PostMapping("/api/tournaments/{tournament_id}/register")
-    @PreAuthorize("hasAuthority('ROLE_USER') or hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_ORGANIZER')")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('USER') or hasRole('ADMIN') or hasRole('ORGANIZER')")
     public ResponseEntity<ApiResponse<TeamRegistrationResponseDTO>> registerTeamForTournament(
             @PathVariable("tournament_id") Long tournamentId,
             @Valid @RequestBody TeamRegistrationRequestDTO request) {
@@ -73,7 +73,7 @@ public class TeamController {
      * PUT /api/teams/{id}
      */
     @PutMapping("/api/teams/{id}")
-    @PreAuthorize("hasAuthority('ROLE_USER') or hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_ORGANIZER')")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('USER') or hasRole('ADMIN') or hasRole('ORGANIZER')")
     public ResponseEntity<ApiResponse<TeamUpdateResponseDTO>> updateTeam(
             @PathVariable Long id,
             @Valid @RequestBody TeamUpdateRequestDTO request) {
@@ -91,7 +91,7 @@ public class TeamController {
      * DELETE /api/teams/{id}
      */
     @DeleteMapping("/api/teams/{id}")
-    @PreAuthorize("hasAuthority('ROLE_USER') or hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('STUDENT') or hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<String>> deleteTeam(@PathVariable Long id) {
         try {
             teamService.deleteTeam(id);
