@@ -151,13 +151,10 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
 
     @Override
+    @Transactional
     public void deleteUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("User not found with id: " + id));
-        
-        // Soft delete
-        user.setActive(false);
-        userRepository.save(user);
+        User user = userRepository.findById(id).orElseThrow(() -> new DataNotFoundException("User not found with id: " + id));
+        userRepository.delete(user);
     }
 
     @Override
