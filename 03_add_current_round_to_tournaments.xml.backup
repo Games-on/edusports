@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <changeSet id="add-current-round-to-tournaments" author="system">
+        <comment>Add current_round column to tournaments table</comment>
+        
+        <!-- Add current_round column -->
+        <addColumn tableName="tournaments">
+            <column name="current_round" type="int" defaultValue="1">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+        
+        <!-- Update existing tournaments to have current_round = 1 -->
+        <sql>
+            UPDATE tournaments SET current_round = 1 WHERE current_round IS NULL;
+        </sql>
+    </changeSet>
+
+</databaseChangeLog>

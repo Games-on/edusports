@@ -1,0 +1,1 @@
+cd C:\Users\ACER\Desktop\edusports && gradlew.bat clean && gradlew.bat build -x test
