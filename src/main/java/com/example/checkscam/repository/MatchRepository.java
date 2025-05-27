@@ -41,4 +41,8 @@ public interface MatchRepository extends JpaRepository<Match, Long> {
     
     @Query("SELECT m FROM Match m WHERE m.tournament = :tournament AND m.roundNumber = :nextRound AND (m.team1 IS NULL OR m.team2 IS NULL) ORDER BY m.matchNumber ASC")
     List<Match> findIncompleteMatchesInRound(@Param("tournament") Tournament tournament, @Param("nextRound") int nextRound);
+    
+    // Statistics methods
+    Long countByStatus(Match.MatchStatus status);
+    Long countByStatusIn(List<Match.MatchStatus> statuses);
 }

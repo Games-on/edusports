@@ -27,4 +27,8 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     boolean existsByTournamentAndName(Tournament tournament, String name);
     
     Optional<Team> findByCaptain(User captain);
+    
+    // Statistics methods - Use Team.TeamStatus (inner enum)
+    Long countByStatus(Team.TeamStatus status);
+    Long countByStatusIn(List<Team.TeamStatus> statuses);
 }

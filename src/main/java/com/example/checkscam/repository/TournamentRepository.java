@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface TournamentRepository extends JpaRepository<Tournament, Long> {
     @Query("SELECT t FROM Tournament t " +
             "WHERE (:status IS NULL OR t.status = :status) " +
@@ -18,4 +20,8 @@ public interface TournamentRepository extends JpaRepository<Tournament, Long> {
             @Param("sportType") String sportType,
             @Param("search") String search,
             Pageable pageable);
+    
+    // Statistics methods
+    Long countByStatus(TournamentStatus status);
+    Long countByStatusIn(List<TournamentStatus> statuses);
 }
