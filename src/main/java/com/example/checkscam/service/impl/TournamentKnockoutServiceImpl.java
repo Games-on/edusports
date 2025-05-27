@@ -119,19 +119,26 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
             throw new InvalidParamException("No matches found in tournament");
         }
 
-        int currentRound = findCurrentRound(tournament, maxRound);
+        int completedRound = findCurrentRound(tournament, maxRound);
         
-        // Check if current round is completed
-        List<Match> currentRoundMatches = matchRepository.findByTournamentAndRound(tournament, currentRound);
-        boolean isCurrentRoundCompleted = currentRoundMatches.stream()
+        // Check if we have a completed round to advance from
+        if (completedRound == 0) {
+            throw new InvalidParamException("No completed rounds found to advance from");
+        }
+        
+        // Get matches from the completed round
+        List<Match> completedRoundMatches = matchRepository.findByTournamentAndRound(tournament, completedRound);
+        
+        // Double-check that the round is actually completed (should always be true after fix)
+        boolean isCurrentRoundCompleted = completedRoundMatches.stream()
                 .allMatch(match -> match.getStatus() == Match.MatchStatus.COMPLETED && match.getWinnerTeam() != null);
 
         if (!isCurrentRoundCompleted) {
-            throw new InvalidParamException("Current round is not completed yet");
+            throw new InvalidParamException("Selected round is not completed yet");
         }
 
-        // Get winners from current round
-        List<Team> winners = currentRoundMatches.stream()
+        // Get winners from completed round
+        List<Team> winners = completedRoundMatches.stream()
                 .map(Match::getWinnerTeam)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
@@ -141,7 +148,7 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
             return completeTournamentAndReturnAdvanceResponse(tournament, winners.isEmpty() ? null : winners.get(0));
         }
 
-        int nextRound = currentRound + 1;
+        int nextRound = completedRound + 1;
         
         // Shuffle winners for random matchups
         Collections.shuffle(winners);
@@ -160,7 +167,7 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
         matchRepository.saveAll(nextRoundMatches);
 
         // Build response
-        return buildAdvanceRoundResponse(tournament, currentRound, nextRound, winners, nextRoundMatches, false, null);
+        return buildAdvanceRoundResponse(tournament, completedRound, nextRound, winners, nextRoundMatches, false, null);
     }
 
     @Override
@@ -360,17 +367,26 @@ public class TournamentKnockoutServiceImpl implements TournamentKnockoutService 
     }
 
     private int findCurrentRound(Tournament tournament, int maxRound) {
-        // Find the first round that has incomplete matches
+        // FIXED: Find the last completed round to advance FROM
+        int lastCompletedRound = 0;
+        
         for (int round = 1; round <= maxRound; round++) {
             List<Match> roundMatches = matchRepository.findByTournamentAndRound(tournament, round);
-            boolean hasIncompleteMatches = roundMatches.stream()
-                    .anyMatch(match -> match.getStatus() != Match.MatchStatus.COMPLETED || match.getWinnerTeam() == null);
+            boolean isRoundCompleted = roundMatches.stream()
+                    .allMatch(match -> match.getStatus() == Match.MatchStatus.COMPLETED && match.getWinnerTeam() != null);
             
-            if (hasIncompleteMatches) {
-                return round;
+            if (isRoundCompleted && !roundMatches.isEmpty()) {
+                lastCompletedRound = round;
+            } else {
+                // Found first incomplete round, stop here
+                break;
             }
         }
-        return maxRound; // All rounds completed
+        
+        log.info("🔍 [findCurrentRound] Tournament {}: lastCompletedRound={}, maxRound={}", 
+                tournament.getId(), lastCompletedRound, maxRound);
+        
+        return lastCompletedRound;
     }
 
     private void populateNextRoundMatches(List<Match> nextRoundMatches, List<Team> winners, User currentUser) {

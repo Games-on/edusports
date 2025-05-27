@@ -6,6 +6,7 @@ import com.example.checkscam.dto.response.TournamentResponseDTO;
 import com.example.checkscam.dto.response.TournamentCreateResponseDTO;
 import com.example.checkscam.dto.response.TournamentUpdateResponseDTO;
 import com.example.checkscam.dto.response.TournamentStartResponseDTO;
+import com.example.checkscam.dto.response.CurrentRoundResponseDTO;
 import com.example.checkscam.dto.response.ApiResponse;
 import com.example.checkscam.response.ResponseObject;
 import com.example.checkscam.service.TournamentService;
@@ -88,6 +89,17 @@ public class TournamentController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error("Failed to start tournament: " + e.getMessage()));
+        }
+    }
+    
+    @GetMapping("/{id}/current-round")
+    public ResponseEntity<ApiResponse<CurrentRoundResponseDTO>> getCurrentRound(@PathVariable Long id) {
+        try {
+            CurrentRoundResponseDTO result = tournamentService.getCurrentRound(id);
+            return ResponseEntity.ok(ApiResponse.success("Current round retrieved successfully", result));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Failed to get current round: " + e.getMessage()));
         }
     }
 }

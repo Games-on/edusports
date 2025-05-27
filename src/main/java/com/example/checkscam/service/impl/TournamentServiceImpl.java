@@ -7,13 +7,16 @@ import com.example.checkscam.dto.response.TournamentResponseDTO;
 import com.example.checkscam.dto.response.TournamentCreateResponseDTO;
 import com.example.checkscam.dto.response.TournamentUpdateResponseDTO;
 import com.example.checkscam.dto.response.TournamentStartResponseDTO;
+import com.example.checkscam.dto.response.CurrentRoundResponseDTO;
 import com.example.checkscam.entity.Tournament;
 import com.example.checkscam.entity.Team;
 import com.example.checkscam.entity.User;
+import com.example.checkscam.entity.Match;
 import com.example.checkscam.exception.DataNotFoundException;
 import com.example.checkscam.repository.TournamentRepository;
 import com.example.checkscam.repository.TeamRepository;
 import com.example.checkscam.repository.UserRepository;
+import com.example.checkscam.repository.MatchRepository;
 import com.example.checkscam.service.TournamentService;
 import com.example.checkscam.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +38,7 @@ public class TournamentServiceImpl implements TournamentService {
     private final TournamentRepository tournamentRepository;
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
+    private final MatchRepository matchRepository;
 
     @Override
     public PaginatedResponseDTO<TournamentResponseDTO> getAllTournaments(TournamentRequestDTO request) {
@@ -143,6 +147,101 @@ public class TournamentServiceImpl implements TournamentService {
         dto.setTeams(teamDTOs);
         
         return dto;
+    }
+    
+    @Override
+    public CurrentRoundResponseDTO getCurrentRound(Long tournamentId) {
+        // Get tournament
+        Tournament tournament = tournamentRepository.findById(tournamentId)
+                .orElseThrow(() -> new DataNotFoundException("Tournament not found with id: " + tournamentId));
+        
+        // Get all matches for this tournament
+        List<Match> allMatches = matchRepository.findByTournament(tournament);
+        
+        if (allMatches.isEmpty()) {
+            // No matches yet - tournament not started
+            return CurrentRoundResponseDTO.builder()
+                    .tournamentId(tournamentId)
+                    .tournamentName(tournament.getName())
+                    .currentRound(1)
+                    .currentRoundName("Vòng 1")
+                    .totalRounds(0)
+                    .completedRounds(0)
+                    .isRoundComplete(false)
+                    .canAdvanceToNextRound(false)
+                    .currentRoundMatches(0)
+                    .completedCurrentRoundMatches(0)
+                    .status(tournament.getStatus().name())
+                    .build();
+        }
+        
+        // Find max round number
+        int maxRound = allMatches.stream()
+                .mapToInt(Match::getRoundNumber)
+                .max()
+                .orElse(1);
+        
+        // Calculate current round and statistics
+        int currentRound = 1;
+        int completedRounds = 0;
+        String currentRoundName = "Vòng 1";
+        
+        // Find the current active round
+        for (int round = 1; round <= maxRound; round++) {
+            final int currentRoundNumber = round; // Make final for lambda
+            List<Match> roundMatches = allMatches.stream()
+                    .filter(match -> match.getRoundNumber() == currentRoundNumber)
+                    .collect(Collectors.toList());
+            
+            long completedMatches = roundMatches.stream()
+                    .filter(match -> match.getStatus() == Match.MatchStatus.COMPLETED)
+                    .count();
+            
+            if (completedMatches == roundMatches.size() && !roundMatches.isEmpty()) {
+                // This round is completed
+                completedRounds = round;
+            } else if (!roundMatches.isEmpty()) {
+                // This round has matches but not all completed - this is current round
+                currentRound = round;
+                currentRoundName = roundMatches.get(0).getRoundName();
+                break;
+            }
+        }
+        
+        // If all rounds completed, current round is next round
+        if (completedRounds == maxRound && maxRound > 0) {
+            currentRound = maxRound + 1;
+            currentRoundName = "Round " + currentRound;
+        }
+        
+        // Get current round matches and statistics
+        final int finalCurrentRound = currentRound; // Make final for lambda
+        List<Match> currentRoundMatches = allMatches.stream()
+                .filter(match -> match.getRoundNumber() == finalCurrentRound)
+                .collect(Collectors.toList());
+        
+        int currentRoundMatchCount = currentRoundMatches.size();
+        int completedCurrentRoundMatches = (int) currentRoundMatches.stream()
+                .filter(match -> match.getStatus() == Match.MatchStatus.COMPLETED)
+                .count();
+        
+        boolean isRoundComplete = currentRoundMatchCount > 0 && 
+                completedCurrentRoundMatches == currentRoundMatchCount;
+        boolean canAdvanceToNextRound = isRoundComplete && currentRound <= maxRound;
+        
+        return CurrentRoundResponseDTO.builder()
+                .tournamentId(tournamentId)
+                .tournamentName(tournament.getName())
+                .currentRound(currentRound)
+                .currentRoundName(currentRoundName)
+                .totalRounds(maxRound)
+                .completedRounds(completedRounds)
+                .isRoundComplete(isRoundComplete)
+                .canAdvanceToNextRound(canAdvanceToNextRound)
+                .currentRoundMatches(currentRoundMatchCount)
+                .completedCurrentRoundMatches(completedCurrentRoundMatches)
+                .status(tournament.getStatus().name())
+                .build();
     }
 
     @Override
