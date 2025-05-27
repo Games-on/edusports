@@ -16,6 +16,6 @@ public class NewsRequestDto {
     private String name;
     private String shortDescription;
     private String content;
+    private String url; // Add URL field
     private List<Attachment> attachments;
-
 }

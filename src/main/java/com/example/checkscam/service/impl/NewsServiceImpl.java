@@ -51,6 +51,7 @@ public class NewsServiceImpl {
         newsEntity.setName(news.getName());
         newsEntity.setContent(news.getContent());
         newsEntity.setShortDescription(news.getShortDescription());
+        newsEntity.setUrl(news.getUrl() != null ? news.getUrl() : ""); // Set URL with default value
         return newsRepository.save(newsEntity);
     }
 
@@ -62,6 +63,7 @@ public class NewsServiceImpl {
             updatedNews.setName(news.getName());
             updatedNews.setShortDescription(news.getShortDescription());
             updatedNews.setContent(news.getContent());
+            updatedNews.setUrl(news.getUrl() != null ? news.getUrl() : ""); // Set URL with default value
             updatedNews.setAttachments(existingNews.get().getAttachments());
             return newsRepository.save(updatedNews); // Lưu bản ghi đã cập nhật
         } else {
