@@ -72,13 +72,42 @@ public class NewsServiceImpl {
     }
 
     // DELETE news
-    public boolean deleteNews(Long id) {
-        Optional<News> news = newsRepository.findById(id);
-        if (news.isPresent()) {
-            newsRepository.delete(news.get());
+    @Transactional // Đảm bảo toàn bộ thao tác là một giao dịch atomic
+    public boolean deleteNews(Long id) throws CheckScamException {
+        Optional<News> newsOptional = newsRepository.findById(id);
+        if (newsOptional.isPresent()) {
+            News newsToDelete = newsOptional.get();
+
+            // 1. Lấy tất cả các attachments liên quan đến tin tức này
+            // Sử dụng newsToDelete.getAttachments() nếu bạn đã FetchType.EAGER hoặc đã load chúng.
+            // Nếu không, bạn cần một phương thức findByNewsId trong AttachmentRepository.
+            List<Attachment> attachments = attachmentRepository.findByNewsId(id);
+
+            // 2. Xóa các file vật lý trên server TRƯỚC khi xóa bản ghi database
+            for (Attachment attachment : attachments) {
+                try {
+                    fileUtils.deleteFile(attachment.getUrl()); // Giả sử getUrl() trả về tên file/đường dẫn cần để xóa
+                    log.info("Deleted physical file: {}", attachment.getUrl());
+                } catch (IOException e) {
+                    log.error("Failed to delete physical file {}: {}", attachment.getUrl(), e.getMessage());
+                    // Tùy chọn: bạn có thể chọn throw exception ở đây hoặc chỉ log lỗi
+                    // và tiếp tục xóa các bản ghi database.
+                }
+            }
+
+            // 3. Xóa tất cả các bản ghi attachment khỏi database
+            attachmentRepository.deleteAll(attachments);
+            log.info("Deleted {} attachments for news ID: {}", attachments.size(), id);
+
+
+            // 4. Cuối cùng, xóa bản ghi news khỏi database
+            newsRepository.delete(newsToDelete);
+            log.info("Deleted news with ID: {}", id);
             return true;
         } else {
-            return false;
+            // Nếu không tìm thấy tin tức, có thể throw một ngoại lệ hoặc trả về false
+            // Tùy thuộc vào yêu cầu nghiệp vụ của bạn.
+            throw new CheckScamException(ErrorCodeEnum.NOT_FOUND);
         }
     }
 

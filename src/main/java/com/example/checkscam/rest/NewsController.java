@@ -5,6 +5,7 @@ import com.example.checkscam.constant.MessageKeys;
 import com.example.checkscam.dto.request.NewsRequestDto;
 import com.example.checkscam.entity.Attachment;
 import com.example.checkscam.entity.News;
+import com.example.checkscam.exception.CheckScamException;
 import com.example.checkscam.exception.DataNotFoundException;
 import com.example.checkscam.exception.FileUploadValidationException;
 import com.example.checkscam.exception.InvalidParamException;
@@ -71,7 +72,7 @@ public class NewsController {
 
     // DELETE news
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteNews(@PathVariable Long id) {
+    public ResponseEntity<?> deleteNews(@PathVariable Long id) throws CheckScamException {
         boolean isDeleted = newsService.deleteNews(id);
         Map<String, String> response = new HashMap<>();
         response.put("message","Deleted News successfully");
